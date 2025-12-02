@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum TimeBucketType {
+  DAY
+  WEEK
+  MONTH
+  CUSTOM
+}
+
+model User {
+  id          String               @id @default(uuid()) @db.Char(36)
+  email       String               @unique @db.VarChar(191)
+  displayName String               @db.VarChar(191)
+  timezone    String               @db.VarChar(64)
+  createdAt   DateTime             @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime             @updatedAt @db.Timestamp(6)
+
+  taskTemplates      TaskTemplate[]
+  timeEntries        TimeEntry[]
+  categoryDimensions CategoryDimension[]
+  categoryValues     CategoryValue[]
+  timeAggregates     TimeAggregate[]
+
+  @@map("users")
+}
+
+model TaskTemplate {
+  id                           String                   @id @default(uuid()) @db.Char(36)
+  userId                       String                   @db.Char(36)
+  name                         String                   @db.VarChar(191)
+  description                  String?                  @db.Text
+  isQuickStart                 Boolean                  @default(false)
+  isArchived                   Boolean                  @default(false)
+  isSystem                     Boolean                  @default(false)
+  isUntracked                  Boolean                  @default(false)
+  defaultDurationEstimateMinutes Int? @db.Int
+  colorHex                     String?                  @db.VarChar(20)
+  mainCategoryValueId          String?                  @db.Char(36)
+  createdAt                    DateTime                 @default(now()) @db.Timestamp(6)
+  updatedAt                    DateTime                 @updatedAt @db.Timestamp(6)
+
+  user                 User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mainCategoryValue   CategoryValue?          @relation("TaskTemplateMainCategory", fields: [mainCategoryValueId], references: [id], onDelete: SetNull)
+  taskTemplateCategory TaskTemplateCategory[]
+  timeEntries          TimeEntry[]
+  aggregates           TimeAggregate[]
+
+  @@unique([userId, name])
+  @@index([userId, isQuickStart])
+  @@index([userId, isArchived])
+  @@index([userId, mainCategoryValueId])
+  @@map("task_templates")
+}
+
+model TimeEntry {
+  id              String                @id @default(uuid()) @db.Char(36)
+  userId          String                @db.Char(36)
+  taskTemplateId  String?               @db.Char(36)
+  mainCategoryValueId String?           @db.Char(36)
+  titleOverride   String?               @db.VarChar(191)
+  notes           String?               @db.Text
+  startedAt       DateTime              @db.DateTime(0)
+  endedAt         DateTime?             @db.DateTime(0)
+  durationSeconds Int?
+  isRunning       Boolean               @default(true)
+  isUntracked     Boolean               @default(false)
+  deletedAt       DateTime?             @db.DateTime(0)
+  localDate       DateTime?             @db.Date
+  year            Int?
+  month           Int?
+  weekOfYear      Int?
+  dayOfWeek       Int?
+  createdAt       DateTime              @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime              @updatedAt @db.Timestamp(6)
+
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskTemplate     TaskTemplate?        @relation(fields: [taskTemplateId], references: [id], onDelete: SetNull)
+  mainCategoryValue CategoryValue?      @relation("TimeEntryMainCategory", fields: [mainCategoryValueId], references: [id], onDelete: SetNull)
+  timeEntryCategory TimeEntryCategory[]
+
+  @@index([userId, localDate])
+  @@index([userId, startedAt])
+  @@index([userId, taskTemplateId])
+  @@index([userId, isRunning])
+  @@index([userId, mainCategoryValueId])
+  @@index([userId, year, weekOfYear])
+  @@map("time_entries")
+}
+
+model CategoryDimension {
+  id          String          @id @default(uuid()) @db.Char(36)
+  userId      String          @db.Char(36)
+  name        String          @db.VarChar(191)
+  description String?         @db.Text
+  color       String?         @db.VarChar(20)
+  isSystem    Boolean         @default(false)
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime        @updatedAt @db.Timestamp(6)
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  values CategoryValue[]
+
+  @@unique([userId, name])
+  @@index([userId, sortOrder])
+  @@map("category_dimensions")
+}
+
+model CategoryValue {
+  id          String          @id @default(uuid()) @db.Char(36)
+  userId      String          @db.Char(36)
+  dimensionId String          @db.Char(36)
+  parentId    String?         @db.Char(36)
+  label       String          @db.VarChar(191)
+  code        String?         @db.VarChar(50)
+  color       String?         @db.VarChar(20)
+  isArchived  Boolean         @default(false)
+  isProductive Boolean        @default(false)
+  isUntracked Boolean         @default(false)
+  metaTags    Json?
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime        @updatedAt @db.Timestamp(6)
+
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dimension            CategoryDimension     @relation(fields: [dimensionId], references: [id], onDelete: Cascade)
+  parent               CategoryValue?        @relation("CategoryValueToChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children             CategoryValue[]       @relation("CategoryValueToChildren")
+  taskTemplateCategory TaskTemplateCategory[]
+  timeEntryCategory    TimeEntryCategory[]
+  aggregates           TimeAggregate[]
+  taskTemplateMainCategory TaskTemplate[] @relation("TaskTemplateMainCategory")
+  timeEntryMainCategory    TimeEntry[]    @relation("TimeEntryMainCategory")
+
+  @@unique([dimensionId, label])
+  @@index([userId, dimensionId])
+  @@index([dimensionId, parentId])
+  @@index([userId, isArchived])
+  @@index([userId, isProductive])
+  @@index([code])
+  @@map("category_values")
+}
+
+model TaskTemplateCategory {
+  id              String     @id @default(uuid()) @db.Char(36)
+  taskTemplateId  String     @db.Char(36)
+  categoryValueId String     @db.Char(36)
+  createdAt       DateTime   @default(now()) @db.Timestamp(6)
+
+  taskTemplate TaskTemplate @relation(fields: [taskTemplateId], references: [id], onDelete: Cascade)
+  categoryValue CategoryValue @relation(fields: [categoryValueId], references: [id], onDelete: Cascade)
+
+  @@unique([taskTemplateId, categoryValueId])
+  @@index([categoryValueId])
+  @@map("task_template_categories")
+}
+
+model TimeEntryCategory {
+  id              String     @id @default(uuid()) @db.Char(36)
+  timeEntryId     String     @db.Char(36)
+  categoryValueId String     @db.Char(36)
+  createdAt       DateTime   @default(now()) @db.Timestamp(6)
+
+  timeEntry     TimeEntry     @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  categoryValue CategoryValue @relation(fields: [categoryValueId], references: [id], onDelete: Cascade)
+
+  @@unique([timeEntryId, categoryValueId])
+  @@index([categoryValueId])
+  @@map("time_entry_categories")
+}
+
+model TimeAggregate {
+  id                 String         @id @default(uuid()) @db.Char(36)
+  userId             String         @db.Char(36)
+  bucketType         TimeBucketType
+  bucketStart        DateTime       @db.Date
+  taskTemplateId     String?        @db.Char(36)
+  categoryValueId    String?        @db.Char(36)
+  totalDurationSeconds Int          @default(0)
+  entryCount         Int            @default(0)
+  lastComputedAt     DateTime?      @db.DateTime(0)
+  createdAt          DateTime       @default(now()) @db.Timestamp(6)
+  updatedAt          DateTime       @updatedAt @db.Timestamp(6)
+
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskTemplate  TaskTemplate?   @relation(fields: [taskTemplateId], references: [id], onDelete: SetNull)
+  categoryValue CategoryValue?  @relation(fields: [categoryValueId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, bucketType, bucketStart, taskTemplateId, categoryValueId])
+  @@index([userId, bucketType, bucketStart])
+  @@map("time_aggregates")
+}
