@@ -21,10 +21,10 @@ const patchSchema = z.object({
   isProductive: z.boolean().optional(),
 });
 
-export const PATCH = withErrorHandling(async (req: NextRequest, { params }: { params: { id: string } }) => {
+const handler = async (req: Request, context?: { params?: { id: string } }) => {
   const userId = getUserIdFromRequest(req);
   void userId;
-  const { id } = paramsSchema.parse(params);
+  const { id } = paramsSchema.parse(context?.params ?? {});
   const body = await req.json();
   const parsed = patchSchema.parse(body ?? {});
 
@@ -32,7 +32,7 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }: { pa
   const updated = await useCases.updateCategoryValue({
     id,
     updates: {
-      dimensionId: parsed.dimensionId,
+      dimensionId: parsed.dimensionId ?? undefined,
       parentId: parsed.parentId,
       label: parsed.label,
       code: parsed.code,
@@ -44,4 +44,9 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }: { pa
   });
 
   return NextResponse.json(updated, { status: 200 });
-});
+};
+
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
+  return withErrorHandling(handler)(req, { params });
+}

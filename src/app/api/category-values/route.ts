@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createUseCases } from '@/infra/container';
 import { withErrorHandling } from '@/infra/http/withErrorHandling';
@@ -19,7 +19,7 @@ const createSchema = z.object({
   isProductive: z.boolean().optional(),
 });
 
-export const GET = withErrorHandling(async (req: Request) => {
+const getHandler = async (req: Request) => {
   const userId = getUserIdFromRequest(req);
   const url = new URL(req.url);
   const dimensionId = url.searchParams.get('dimensionId');
@@ -28,9 +28,9 @@ export const GET = withErrorHandling(async (req: Request) => {
   const useCases = createUseCases();
   const values = await useCases.listCategoryValues({ userId, dimensionId: parsed.dimensionId });
   return NextResponse.json(values, { status: 200 });
-});
+};
 
-export const POST = withErrorHandling(async (req: Request) => {
+const postHandler = async (req: Request) => {
   const userId = getUserIdFromRequest(req);
   const body = await req.json();
   const parsed = createSchema.parse(body);
@@ -43,4 +43,12 @@ export const POST = withErrorHandling(async (req: Request) => {
   });
 
   return NextResponse.json(value, { status: 201 });
-});
+};
+
+export async function GET(req: NextRequest, context: { params: Promise<Record<string, never>> }) {
+  return withErrorHandling(getHandler)(req, { params: await context.params });
+}
+
+export async function POST(req: NextRequest, context: { params: Promise<Record<string, never>> }) {
+  return withErrorHandling(postHandler)(req, { params: await context.params });
+}

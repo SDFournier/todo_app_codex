@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createUseCases } from '@/infra/container';
 import { withErrorHandling } from '@/infra/http/withErrorHandling';
@@ -14,7 +14,7 @@ const schema = z.object({
   stopRunningIfExists: z.boolean().optional(),
 });
 
-export const POST = withErrorHandling(async (req: Request) => {
+const handler = async (req: Request) => {
   const userId = getUserIdFromRequest(req);
   const body = await readJsonOrDefault(req, {});
   const parsed = schema.parse(body);
@@ -26,4 +26,8 @@ export const POST = withErrorHandling(async (req: Request) => {
   });
 
   return NextResponse.json(entry, { status: 201 });
-});
+};
+
+export async function POST(req: NextRequest, context: { params: Promise<Record<string, never>> }) {
+  return withErrorHandling(handler)(req, { params: await context.params });
+}

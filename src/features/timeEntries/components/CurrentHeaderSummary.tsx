@@ -71,28 +71,20 @@ export const CurrentHeaderSummary: React.FC<Props> = ({ entry, nowIso, streaks =
           </div>
         )}
         {hourly.length > 0 && (
-          <div className="space-y-1 hidden md:block">
+          <div className="hidden space-y-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-3 py-2 shadow-sm md:block">
             <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Racha por hora</div>
-            <div className="flex items-center gap-[4px]">
+            <div className="mx-auto flex w-1/3 min-w-[120px] max-w-[160px] items-center gap-[4px] px-1">
               {hourly.map((bucket, idx) => {
                 const isCurrent = idx === hourly.length - 1;
-                const color =
-                  bucket.trackedSeconds < 5 * 60
-                    ? "bg-[var(--color-border)]"
-                    : bucket.productivePercent < 20
-                    ? "bg-[var(--color-error)]/80"
-                    : bucket.productivePercent < 50
-                    ? "bg-[var(--color-warning)]/80"
-                    : bucket.productivePercent < 80
-                    ? "bg-[var(--color-warning)]"
-                    : "bg-[var(--color-success)]";
+                const hasTracked = bucket.trackedSeconds > 0;
+                const color = hasTracked ? "bg-[var(--color-border)]" : "bg-[var(--color-error)]/70";
                 return (
                   <div
                     key={`${bucket.start.toISOString()}-${idx}`}
-                    className={`h-3 flex-1 rounded-sm ${color} ${isCurrent ? "ring-[1.5px] ring-[var(--color-text-main)]" : ""}`}
+                    className={`h-3 min-w-[8px] flex-1 rounded-sm ${color} ${isCurrent ? "ring-[1.5px] ring-[var(--color-text-main)]" : ""}`}
                     title={`Hora ${bucket.start.toLocaleTimeString([], { hour: "2-digit" })}-${bucket.end.toLocaleTimeString([], {
                       hour: "2-digit",
-                    })}: ${bucket.trackedSeconds >= 60 ? bucket.productivePercent + "% productivo" : "casi sin datos"}`}
+                    })}: ${hasTracked ? "con actividad" : "sin actividad"}`}
                   />
                 );
               })}

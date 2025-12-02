@@ -1,5 +1,9 @@
 import { prisma } from '@/infra/db/prismaClient';
-import { CreateTaskTemplateInput, TaskTemplateRepository } from '@/core/ports/repositories/taskTemplateRepository';
+import {
+  CreateTaskTemplateInput,
+  TaskTemplateRepository,
+  UpdateTaskTemplateInput,
+} from '@/core/ports/repositories/taskTemplateRepository';
 import { TaskTemplate } from '@/core/domain/taskTemplate/taskTemplate.types';
 import { mapTaskTemplate } from './mappers';
 
@@ -34,7 +38,7 @@ export class PrismaTaskTemplateRepository implements TaskTemplateRepository {
     return mapTaskTemplate(entity);
   }
 
-  async update(id: string, input: Partial<CreateTaskTemplateInput>): Promise<TaskTemplate> {
+  async update(id: string, input: UpdateTaskTemplateInput): Promise<TaskTemplate> {
     const { mainCategoryValueId, categoryValueIds, ...rest } = input;
     const entity = await prisma.taskTemplate.update({
       where: { id },

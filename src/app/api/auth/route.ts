@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
-export const POST = async (req: Request) => {
+export async function POST(req: NextRequest, context: { params: Promise<Record<string, never>> }) {
   const appPassword = process.env.APP_PASSWORD;
   if (!appPassword) {
     return NextResponse.json({ message: 'Password not set' }, { status: 500 });
@@ -19,4 +19,4 @@ export const POST = async (req: Request) => {
     maxAge: 60 * 60 * 24 * 7,
   });
   return res;
-};
+}

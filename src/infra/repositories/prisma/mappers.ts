@@ -1,11 +1,17 @@
-import type { Prisma } from '@prisma/client';
+import type {
+  User as PrismaUser,
+  TaskTemplate as PrismaTaskTemplate,
+  TimeEntry as PrismaTimeEntry,
+  CategoryDimension as PrismaCategoryDimension,
+  CategoryValue as PrismaCategoryValue,
+} from '@prisma/client';
 import { TimeEntry } from '@/core/domain/timeEntry/timeEntry.types';
 import { TaskTemplate } from '@/core/domain/taskTemplate/taskTemplate.types';
 import { User } from '@/core/domain/user/user.types';
 import { CategoryDimension } from '@/core/domain/categoryDimension/categoryDimension.types';
 import { CategoryValue } from '@/core/domain/categoryValue/categoryValue.types';
 
-export const mapUser = (u: Prisma.User): User => ({
+export const mapUser = (u: PrismaUser): User => ({
   id: u.id,
   email: u.email,
   displayName: u.displayName,
@@ -15,9 +21,9 @@ export const mapUser = (u: Prisma.User): User => ({
 });
 
 export const mapTaskTemplate = (
-  t: Prisma.TaskTemplate & {
-    taskTemplateCategory?: { categoryValue: Prisma.CategoryValue; categoryValueId: string }[];
-    mainCategoryValue?: Prisma.CategoryValue | null;
+  t: PrismaTaskTemplate & {
+    taskTemplateCategory?: { categoryValue: PrismaCategoryValue; categoryValueId: string }[];
+    mainCategoryValue?: PrismaCategoryValue | null;
   },
 ): TaskTemplate => ({
   id: t.id,
@@ -26,10 +32,10 @@ export const mapTaskTemplate = (
   description: t.description,
   isQuickStart: t.isQuickStart,
   isArchived: t.isArchived,
-  isSystem: (t as Prisma.TaskTemplate).isSystem ?? false,
-  isUntracked: (t as Prisma.TaskTemplate).isUntracked ?? false,
+  isSystem: (t as PrismaTaskTemplate).isSystem ?? false,
+  isUntracked: (t as PrismaTaskTemplate).isUntracked ?? false,
   defaultDurationEstimateMinutes: t.defaultDurationEstimateMinutes,
-  colorHex: (t as Prisma.TaskTemplate).colorHex ?? null,
+  colorHex: (t as PrismaTaskTemplate).colorHex ?? null,
   mainCategoryValueId: t.mainCategoryValueId ?? null,
   mainCategoryValue: t.mainCategoryValue ? mapCategoryValue(t.mainCategoryValue) : null,
   categoryValueIds: t.taskTemplateCategory?.map((c) => c.categoryValueId) ?? [],
@@ -38,7 +44,7 @@ export const mapTaskTemplate = (
   updatedAt: t.updatedAt,
 });
 
-export const mapTimeEntry = (e: Prisma.TimeEntry): TimeEntry => ({
+export const mapTimeEntry = (e: PrismaTimeEntry): TimeEntry => ({
   id: e.id,
   userId: e.userId,
   taskTemplateId: e.taskTemplateId ?? null,
@@ -49,7 +55,7 @@ export const mapTimeEntry = (e: Prisma.TimeEntry): TimeEntry => ({
   endedAt: e.endedAt ?? null,
   durationSeconds: e.durationSeconds ?? null,
   isRunning: e.isRunning,
-  isUntracked: (e as Prisma.TimeEntry).isUntracked ?? false,
+  isUntracked: (e as PrismaTimeEntry).isUntracked ?? false,
   deletedAt: e.deletedAt ?? null,
   localDate: e.localDate ?? undefined,
   year: e.year ?? null,
@@ -61,20 +67,20 @@ export const mapTimeEntry = (e: Prisma.TimeEntry): TimeEntry => ({
 });
 
 export const mapCategoryDimension = (
-  d: Prisma.CategoryDimension,
+  d: PrismaCategoryDimension,
 ): CategoryDimension => ({
   id: d.id,
   userId: d.userId,
   name: d.name,
   description: d.description,
-  color: (d as Prisma.CategoryDimension & { color?: string | null }).color ?? null,
+  color: (d as PrismaCategoryDimension & { color?: string | null }).color ?? null,
   isSystem: d.isSystem,
   sortOrder: d.sortOrder,
   createdAt: d.createdAt,
   updatedAt: d.updatedAt,
 });
 
-export const mapCategoryValue = (v: Prisma.CategoryValue): CategoryValue => ({
+export const mapCategoryValue = (v: PrismaCategoryValue): CategoryValue => ({
   id: v.id,
   userId: v.userId,
   dimensionId: v.dimensionId,
@@ -83,7 +89,7 @@ export const mapCategoryValue = (v: Prisma.CategoryValue): CategoryValue => ({
   code: v.code,
   color: v.color,
   isProductive: v.isProductive,
-  isUntracked: (v as Prisma.CategoryValue).isUntracked ?? false,
+  isUntracked: (v as PrismaCategoryValue).isUntracked ?? false,
   metaTags: v.metaTags as unknown,
   isArchived: v.isArchived,
   sortOrder: v.sortOrder,

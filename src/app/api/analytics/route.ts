@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { withErrorHandling } from '@/infra/http/withErrorHandling';
 import { getUserIdFromRequest } from '@/infra/http/getUserId';
@@ -43,30 +43,34 @@ const parseRange = (raw: { from: string; to: string; resolution?: AnalyticsResol
   return { from, to, resolution };
 };
 
-export const POST = withErrorHandling(async (req: Request) => {
-  const userId = getUserIdFromRequest(req);
-  const rawText = await req.text();
-  const json = rawText ? JSON.parse(rawText) : {};
-  const parsed = bodySchema.parse(json);
+export async function POST(req: NextRequest, context: { params: Promise<Record<string, never>> }) {
+  const handler = withErrorHandling(async (r: Request) => {
+    const userId = getUserIdFromRequest(r);
+    const rawText = await r.text();
+    const json = rawText ? JSON.parse(rawText) : {};
+    const parsed = bodySchema.parse(json);
 
-  const range = parseRange(parsed.range);
-  const compareRange = parsed.compareRange ? parseRange(parsed.compareRange) : undefined;
+    const range = parseRange(parsed.range);
+    const compareRange = parsed.compareRange ? parseRange(parsed.compareRange) : undefined;
 
-  const useCases = createUseCases();
-  const [primaryEntries, compareEntries] = await Promise.all([
-    useCases.listTimeEntriesByRange({ userId, from: range.from, to: range.to }),
-    compareRange
-      ? useCases.listTimeEntriesByRange({ userId, from: compareRange.from, to: compareRange.to })
-      : Promise.resolve(undefined),
-  ]);
+    const useCases = createUseCases();
+    const [primaryEntries, compareEntries] = await Promise.all([
+      useCases.listTimeEntriesByRange({ userId, from: range.from, to: range.to }),
+      compareRange
+        ? useCases.listTimeEntriesByRange({ userId, from: compareRange.from, to: compareRange.to })
+        : Promise.resolve(undefined),
+    ]);
 
-  const report = buildAnalyticsReport(primaryEntries, {
-    compareEntries: compareEntries ?? undefined,
-    filters: parsed.filters,
-    range,
-    compareRange,
-    resolution: range.resolution,
+    const report = buildAnalyticsReport(primaryEntries, {
+      compareEntries: compareEntries ?? undefined,
+      filters: parsed.filters,
+      range,
+      compareRange,
+      resolution: range.resolution,
+    });
+
+    return NextResponse.json({ report }, { status: 200 });
   });
 
-  return NextResponse.json({ report }, { status: 200 });
-});
+  return handler(req, { params: await context.params });
+}

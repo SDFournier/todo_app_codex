@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-export default function AuthPage() {
+const AuthContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [password, setPassword] = useState("");
@@ -53,5 +53,13 @@ export default function AuthPage() {
         </Card>
       </div>
     </main>
+  );
+};
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={null}>
+      <AuthContent />
+    </Suspense>
   );
 }

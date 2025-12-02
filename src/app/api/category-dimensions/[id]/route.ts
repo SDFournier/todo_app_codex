@@ -16,9 +16,9 @@ const patchSchema = z.object({
   sortOrder: optionalPositiveInt,
 });
 
-export const PATCH = withErrorHandling(async (req: NextRequest, { params }: { params: { id: string } }) => {
+const handler = async (req: Request, context?: { params?: { id: string } }) => {
   const userId = getUserIdFromRequest(req);
-  const { id } = paramsSchema.parse(params);
+  const { id } = paramsSchema.parse(context?.params ?? {});
   const body = await req.json();
   const parsed = patchSchema.parse(body ?? {});
 
@@ -31,4 +31,9 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }: { pa
   });
 
   return NextResponse.json(updated, { status: 200 });
-});
+};
+
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
+  return withErrorHandling(handler)(req, { params });
+}

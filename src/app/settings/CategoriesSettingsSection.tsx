@@ -685,7 +685,7 @@ export const CategoriesSettingsSection: React.FC = () => {
                             variant="ghost"
                             onClick={() => {
                               setEditingCategoryId(null);
-                              setCategoryEditForm({ label: "", code: "", color: null, dimensionId: null });
+                              setCategoryEditForm({ label: "", code: "", color: null, dimensionId: null, isProductive: false });
                             }}
                           >
                             Cancel

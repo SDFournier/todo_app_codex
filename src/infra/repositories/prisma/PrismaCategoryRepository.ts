@@ -6,6 +6,8 @@ import {
   UpdateCategoryDimensionInput,
   UpdateCategoryValueInput,
 } from '@/core/ports/repositories/categoryRepository';
+import { CategoryDimension } from '@/core/domain/categoryDimension/categoryDimension.types';
+import { CategoryValue } from '@/core/domain/categoryValue/categoryValue.types';
 import { mapCategoryDimension, mapCategoryValue } from './mappers';
 
 export class PrismaCategoryRepository implements CategoryRepository {
@@ -18,24 +20,24 @@ export class PrismaCategoryRepository implements CategoryRepository {
   }
 
   async createDimension(input: CreateCategoryDimensionInput): Promise<CategoryDimension> {
+    const { color: _color, ...rest } = input;
     const dim = await prisma.categoryDimension.create({
       data: {
-        ...input,
-        description: input.description ?? null,
-        color: input.color ?? null,
-        isSystem: input.isSystem ?? false,
-        sortOrder: input.sortOrder ?? 0,
+        ...rest,
+        description: rest.description ?? null,
+        isSystem: rest.isSystem ?? false,
+        sortOrder: rest.sortOrder ?? 0,
       },
     });
     return mapCategoryDimension(dim);
   }
 
   async updateDimension(id: string, input: UpdateCategoryDimensionInput): Promise<CategoryDimension> {
+    const { color: _color, ...rest } = input;
     const dim = await prisma.categoryDimension.update({
       where: { id },
       data: {
-        ...input,
-        color: input.color ?? undefined,
+        ...rest,
       },
     });
     return mapCategoryDimension(dim);

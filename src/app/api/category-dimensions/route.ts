@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createUseCases } from '@/infra/container';
 import { withErrorHandling } from '@/infra/http/withErrorHandling';
@@ -13,14 +13,14 @@ const createSchema = z.object({
   color: optionalHexColor,
 });
 
-export const GET = withErrorHandling(async (req: Request) => {
+const getHandler = async (req: Request) => {
   const userId = getUserIdFromRequest(req);
   const useCases = createUseCases();
   const dims = await useCases.listCategoryDimensions({ userId });
   return NextResponse.json(dims, { status: 200 });
-});
+};
 
-export const POST = withErrorHandling(async (req: Request) => {
+const postHandler = async (req: Request) => {
   const userId = getUserIdFromRequest(req);
   const body = await req.json();
   const parsed = createSchema.parse(body);
@@ -30,4 +30,12 @@ export const POST = withErrorHandling(async (req: Request) => {
     ...parsed,
   });
   return NextResponse.json(dim, { status: 201 });
-});
+};
+
+export async function GET(req: NextRequest, context: { params: Promise<Record<string, never>> }) {
+  return withErrorHandling(getHandler)(req, { params: await context.params });
+}
+
+export async function POST(req: NextRequest, context: { params: Promise<Record<string, never>> }) {
+  return withErrorHandling(postHandler)(req, { params: await context.params });
+}

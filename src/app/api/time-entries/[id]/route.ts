@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createUseCases } from '@/infra/container';
 import { withErrorHandling } from '@/infra/http/withErrorHandling';
@@ -32,11 +32,10 @@ const patchSchema = z.object({
   categoryValueIds: optionalUuidArray,
 });
 
-export const PATCH = withErrorHandling(async (req: Request, context?: { params?: { id: string } }) => {
+const patchHandler = async (req: Request, context?: { params?: { id: string } }) => {
   console.log('PATCH /api/time-entries/:id start', { url: req.url, method: req.method });
   const userId = getUserIdFromRequest(req);
-  const resolvedParams = await Promise.resolve(context?.params);
-  const { id } = paramsSchema.parse(resolvedParams ?? {});
+  const { id } = paramsSchema.parse(context?.params ?? {});
   const raw = await req.text();
   // Debug logging to catch promise-like bodies that Zod rejects.
   console.log('PATCH /api/time-entries/:id raw type', typeof raw);
@@ -81,13 +80,20 @@ export const PATCH = withErrorHandling(async (req: Request, context?: { params?:
   });
 
   return NextResponse.json(entry, { status: 200 });
-});
+};
 
-export const DELETE = withErrorHandling(async (req: Request, context?: { params?: { id: string } }) => {
+const deleteHandler = async (req: Request, context?: { params?: { id: string } }) => {
   const userId = getUserIdFromRequest(req);
-  const resolvedParams = await Promise.resolve(context?.params);
-  const { id } = paramsSchema.parse(resolvedParams ?? {});
+  const { id } = paramsSchema.parse(context?.params ?? {});
   const useCases = createUseCases();
   await useCases.deleteTimeEntry({ userId, entryId: id });
   return new NextResponse(null, { status: 204 });
-});
+};
+
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  return withErrorHandling(patchHandler)(req, { params: await context.params });
+}
+
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  return withErrorHandling(deleteHandler)(req, { params: await context.params });
+}

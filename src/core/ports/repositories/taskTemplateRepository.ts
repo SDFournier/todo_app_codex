@@ -11,6 +11,7 @@ export type CreateTaskTemplateInput = {
   defaultDurationEstimateMinutes?: number | null;
   colorHex?: string | null;
   mainCategoryValueId?: string | null;
+  categoryValueIds?: string[];
 };
 
 export type UpdateTaskTemplateInput = {
@@ -23,6 +24,7 @@ export type UpdateTaskTemplateInput = {
   defaultDurationEstimateMinutes?: number | null;
   colorHex?: string | null;
   mainCategoryValueId?: string | null;
+  categoryValueIds?: string[];
 };
 
 /**

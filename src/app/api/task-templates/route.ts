@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createUseCases } from '@/infra/container';
 import { withErrorHandling } from '@/infra/http/withErrorHandling';
@@ -15,22 +15,20 @@ const createSchema = z.object({
   colorHex: z.string().max(20).nullable().optional(),
 });
 
-export const GET = withErrorHandling(async (req: Request) => {
+const getHandler = async (req: Request) => {
   const userId = getUserIdFromRequest(req);
   const useCases = createUseCases();
   const templates = await useCases.listTaskTemplates({ userId });
   return NextResponse.json(templates, { status: 200 });
-});
+};
 
-export const POST = withErrorHandling(async (req: Request) => {
+const postHandler = async (req: Request) => {
   const userId = getUserIdFromRequest(req);
   const body = await req.json();
   const parsed = createSchema.parse(body);
 
   const useCases = createUseCases();
-  const categoryValueIds = parsed.categoryValueIds
-    ? Array.from(new Set(parsed.categoryValueIds))
-    : [];
+  const categoryValueIds = parsed.categoryValueIds ? Array.from(new Set(parsed.categoryValueIds)) : [];
   const mainCategoryValueId = parsed.mainCategoryValueId ?? null;
   const normalizedCategoryIds =
     mainCategoryValueId && !categoryValueIds.includes(mainCategoryValueId)
@@ -58,4 +56,12 @@ export const POST = withErrorHandling(async (req: Request) => {
   const refreshed = await useCases.repositories.taskTemplateRepository.findById(template.id);
 
   return NextResponse.json(refreshed ?? template, { status: 201 });
-});
+};
+
+export async function GET(req: NextRequest, context: { params: Promise<Record<string, never>> }) {
+  return withErrorHandling(getHandler)(req, { params: await context.params });
+}
+
+export async function POST(req: NextRequest, context: { params: Promise<Record<string, never>> }) {
+  return withErrorHandling(postHandler)(req, { params: await context.params });
+}
