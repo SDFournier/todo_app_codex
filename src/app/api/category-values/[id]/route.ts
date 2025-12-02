@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createUseCases } from '@/infra/container';
 import { withErrorHandling } from '@/infra/http/withErrorHandling';
@@ -21,10 +21,10 @@ const patchSchema = z.object({
   isProductive: z.boolean().optional(),
 });
 
-export const PATCH = withErrorHandling(async (req: Request, context?: { params?: { id: string } }) => {
+export const PATCH = withErrorHandling(async (req: NextRequest, { params }: { params: { id: string } }) => {
   const userId = getUserIdFromRequest(req);
   void userId;
-  const { id } = paramsSchema.parse(await Promise.resolve(context?.params ?? {}));
+  const { id } = paramsSchema.parse(params);
   const body = await req.json();
   const parsed = patchSchema.parse(body ?? {});
 
