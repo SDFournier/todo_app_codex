@@ -1,15 +1,9 @@
 import type { NextConfig } from "next";
-import path from "path";
 
+// Minimal config to avoid Turbopack vs webpack conflict; aliasing is handled via tsconfig paths.
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@prisma/client"],
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...(config.resolve.alias || {}),
-      "@": path.resolve(__dirname, "src"),
-    };
-    return config;
-  },
+  turbopack: {},
 };
 
 export default nextConfig;
