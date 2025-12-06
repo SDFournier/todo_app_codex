@@ -6,9 +6,9 @@ export function getUserIdFromRequest(req: Request): string {
   const headerId = req.headers.get('x-user-id');
   if (headerId) return headerId;
 
-  // Development-only escape hatch so local requests can succeed without auth wiring.
-  const devFallback = process.env.DEV_USER_ID;
-  if (process.env.NODE_ENV !== 'production' && devFallback) return devFallback;
+  // Fallback for environments without auth wiring (e.g. demo deployments).
+  const fallback = process.env.DEMO_USER_ID ?? process.env.DEV_USER_ID ?? process.env.NEXT_PUBLIC_DEMO_USER_ID;
+  if (fallback) return fallback;
 
   throw new Error('Unauthorized: missing user id');
 }
