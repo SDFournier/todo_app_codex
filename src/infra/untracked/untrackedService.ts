@@ -23,23 +23,33 @@ const ensureUntrackedCategory = async (userId: string): Promise<CategoryValue> =
     return mapCategoryValue(existing);
   }
 
-  let dimension = await prisma.categoryDimension.findFirst({
-    where: { userId, name: UNTRACKED_DIMENSION_NAME },
+  const dimension = await prisma.categoryDimension.upsert({
+    where: { userId_name: { userId, name: UNTRACKED_DIMENSION_NAME } },
+    update: {
+      isSystem: true,
+      sortOrder: -100,
+      description: 'System categories',
+    },
+    create: {
+      userId,
+      name: UNTRACKED_DIMENSION_NAME,
+      description: 'System categories',
+      isSystem: true,
+      sortOrder: -100,
+    },
   });
-  if (!dimension) {
-    dimension = await prisma.categoryDimension.create({
-      data: {
-        userId,
-        name: UNTRACKED_DIMENSION_NAME,
-        description: 'System categories',
-        isSystem: true,
-        sortOrder: -100,
-      },
-    });
-  }
 
-  const created = await prisma.categoryValue.create({
-    data: {
+  const created = await prisma.categoryValue.upsert({
+    where: { dimensionId_label: { dimensionId: dimension.id, label: UNTRACKED_CATEGORY_LABEL } },
+    update: {
+      code: 'untracked',
+      color: UNTRACKED_CATEGORY_COLOR,
+      isProductive: false,
+      isUntracked: true,
+      sortOrder: -100,
+      metaTags: ['untracked'],
+    },
+    create: {
       userId,
       dimensionId: dimension.id,
       label: UNTRACKED_CATEGORY_LABEL,
@@ -65,8 +75,17 @@ const ensureUntrackedTemplate = async (userId: string): Promise<TaskTemplate> =>
   }
 
   const category = await ensureUntrackedCategory(userId);
-  const created = await prisma.taskTemplate.create({
-    data: {
+  const baseTemplate = await prisma.taskTemplate.upsert({
+    where: { userId_name: { userId, name: UNTRACKED_TEMPLATE_NAME } },
+    update: {
+      description: 'Fallback tracking when no specific activity is selected.',
+      isQuickStart: false,
+      isArchived: false,
+      isSystem: true,
+      isUntracked: true,
+      mainCategoryValueId: category.id,
+    },
+    create: {
       userId,
       name: UNTRACKED_TEMPLATE_NAME,
       description: 'Fallback tracking when no specific activity is selected.',
@@ -75,12 +94,21 @@ const ensureUntrackedTemplate = async (userId: string): Promise<TaskTemplate> =>
       isSystem: true,
       isUntracked: true,
       mainCategoryValueId: category.id,
-      taskTemplateCategory: { create: { categoryValueId: category.id } },
     },
+  });
+
+  await prisma.taskTemplateCategory.upsert({
+    where: { taskTemplateId_categoryValueId: { taskTemplateId: baseTemplate.id, categoryValueId: category.id } },
+    update: {},
+    create: { taskTemplateId: baseTemplate.id, categoryValueId: category.id },
+  });
+
+  const hydrated = await prisma.taskTemplate.findUniqueOrThrow({
+    where: { id: baseTemplate.id },
     include: { taskTemplateCategory: { include: { categoryValue: true } }, mainCategoryValue: true },
   });
 
-  return mapTaskTemplate(created);
+  return mapTaskTemplate(hydrated);
 };
 
 export const startUntrackedEntryForUser = async (userId: string): Promise<TimeEntry> => {
