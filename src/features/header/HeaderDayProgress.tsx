@@ -43,22 +43,17 @@ export const HeaderDayProgress: React.FC<Props> = ({ dayStartIso, nowIso, entrie
   );
 
   const aggregate = useMemo(() => computeDayAggregate({ entries, now, dayStart }), [entries, now, dayStart]);
-  const untrackedGapSeconds = Math.max(0, aggregate.dayElapsedSeconds - (aggregate.trackedSeconds + aggregate.untrackedSeconds));
-  const displayUntrackedSeconds = aggregate.untrackedSeconds + untrackedGapSeconds;
-  const trackedPctOfDay =
-    aggregate.dayElapsedSeconds > 0 ? Math.round((aggregate.trackedSeconds / aggregate.dayElapsedSeconds) * 100) : 0;
-  const productivePct =
-    aggregate.dayElapsedSeconds > 0 ? Math.round((aggregate.productiveSeconds / aggregate.dayElapsedSeconds) * 100) : 0;
-  const otherPct =
-    aggregate.dayElapsedSeconds > 0 ? Math.round((aggregate.otherSeconds / aggregate.dayElapsedSeconds) * 100) : 0;
-  const untrackedPct =
-    aggregate.dayElapsedSeconds > 0 ? Math.min(100, Math.round((displayUntrackedSeconds / aggregate.dayElapsedSeconds) * 100)) : 0;
+  const displayUntrackedSeconds = aggregate.untrackedSeconds;
+  const trackedPctOfDay = aggregate.dayElapsedSeconds > 0 ? Math.round((aggregate.trackedSeconds / aggregate.dayElapsedSeconds) * 100) : 0;
+  const productivePct = aggregate.dayElapsedSeconds > 0 ? Math.round((aggregate.productiveSeconds / aggregate.dayElapsedSeconds) * 100) : 0;
+  const otherPct = aggregate.dayElapsedSeconds > 0 ? Math.round((aggregate.otherSeconds / aggregate.dayElapsedSeconds) * 100) : 0;
+  const untrackedPct = aggregate.dayElapsedSeconds > 0 ? Math.min(100, Math.round((aggregate.untrackedSeconds / aggregate.dayElapsedSeconds) * 100)) : 0;
 
   const untrackedMeta = useMemo(() => computeUntrackedMeta(entries, now), [entries, now]);
   const runningUntrackedSeconds =
     runningEntry && runningEntry.isUntracked ? Math.max(0, Math.floor((now.getTime() - new Date(runningEntry.startedAt).getTime()) / 1000)) : 0;
 
-  const timelineSegments = useMemo(() => buildTimelineSegments({ entries, dayStart, now }), [entries, dayStart, now]);
+  const timelineSegments = useMemo(() => buildTimelineSegments({ entries, dayStart, now, fillGapsAsUntracked: false }), [entries, dayStart, now]);
 
   const normalizedSegments: NormalizedSegment[] = useMemo(() => {
     const totalCovered = timelineSegments.reduce((acc, seg) => acc + seg.durationSeconds, 0);

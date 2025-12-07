@@ -285,8 +285,9 @@ export const buildTimelineSegments = (params: {
   entries: TodayEntrySummary[];
   dayStart: Date;
   now: Date;
+  fillGapsAsUntracked?: boolean;
 }): TimelineSegment[] => {
-  const { entries, dayStart, now } = params;
+  const { entries, dayStart, now, fillGapsAsUntracked = true } = params;
   const sorted = [...entries].sort((a, b) => toDate(a.startedAt).getTime() - toDate(b.startedAt).getTime());
   const segments: TimelineSegment[] = [];
   let cursor = dayStart;
@@ -304,7 +305,7 @@ export const buildTimelineSegments = (params: {
     const clampedEnd = end > now ? now : end;
     if (clampedEnd <= clampedStart) continue;
 
-    if (clampedStart > cursor) {
+    if (fillGapsAsUntracked && clampedStart > cursor) {
       pushSegment("untracked", Math.floor((clampedStart.getTime() - cursor.getTime()) / 1000));
     }
 
@@ -314,7 +315,7 @@ export const buildTimelineSegments = (params: {
     cursor = clampedEnd;
   }
 
-  if (cursor < now) {
+  if (fillGapsAsUntracked && cursor < now) {
     pushSegment("untracked", Math.floor((now.getTime() - cursor.getTime()) / 1000));
   }
 

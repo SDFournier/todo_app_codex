@@ -343,6 +343,9 @@ export default function Home() {
                   onStartFromInput={() => void handleManualStart()}
                   onChooseQuickStarts={focusQuickStarts}
                 />
+                <div className="md:hidden">
+                  <QuickStartList templates={quickStarts} onStartTemplate={(id) => handleStart(id)} />
+                </div>
                 {running?.isUntracked && quickStarts.length > 0 && (
                   <div className="space-y-2" ref={quickStartsRef}>
                     <div className="text-xs font-semibold text-[var(--color-text-muted)]">Start quickly with:</div>
@@ -474,8 +477,10 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2">
-          <QuickStartList templates={quickStarts} onStartTemplate={(id) => handleStart(id)} />
+        <section className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
+          <div className="hidden md:block">
+            <QuickStartList templates={quickStarts} onStartTemplate={(id) => handleStart(id)} />
+          </div>
           <RecentEntriesList
             entries={entries}
             onUpdate={handleUpdateEntry}
