@@ -2,6 +2,24 @@ import { TodayEntrySummary } from "@/infra/header/getHeaderData";
 
 type BucketLabel = "productive" | "other" | "untracked" | "mixed" | "none";
 
+export type DayTotals = {
+  productiveSeconds: number;
+  otherSeconds: number;
+  untrackedSeconds: number;
+  trackedSeconds: number; // productivo + otro (explícitamente trackeado)
+  loggedSeconds: number; // tracked + untracked (todo lo registrado)
+  dayElapsedSeconds: number;
+  entryCount: number;
+};
+
+export type DayPercents = {
+  productivePctOfDay: number;
+  otherPctOfDay: number;
+  untrackedPctOfDay: number;
+  trackedPctOfDay: number;
+  loggedPctOfDay: number;
+};
+
 const toDate = (value: string | Date) => (value instanceof Date ? value : new Date(value));
 
 const overlapSeconds = (start: Date, end: Date, windowStart: Date, windowEnd: Date) => {
@@ -29,7 +47,7 @@ export const computeDayAggregate = (params: {
   entries: TodayEntrySummary[];
   now: Date;
   dayStart: Date;
-}) => {
+}): DayTotals => {
   const { entries, now, dayStart } = params;
   let productiveSeconds = 0;
   let otherSeconds = 0;
@@ -51,6 +69,7 @@ export const computeDayAggregate = (params: {
 
   // trackedSeconds excluye lo no trackeado explícito
   const trackedSeconds = productiveSeconds + otherSeconds;
+  const loggedSeconds = trackedSeconds + untrackedSeconds;
   const dayElapsedSeconds = Math.max(0, Math.floor((now.getTime() - dayStart.getTime()) / 1000));
 
   return {
@@ -58,9 +77,40 @@ export const computeDayAggregate = (params: {
     otherSeconds,
     untrackedSeconds,
     trackedSeconds,
+    loggedSeconds,
     dayElapsedSeconds,
     entryCount,
   };
+};
+
+export const computeDayPercents = (totals: DayTotals): DayPercents => {
+  const { dayElapsedSeconds, productiveSeconds, otherSeconds, untrackedSeconds, trackedSeconds, loggedSeconds } = totals;
+  if (dayElapsedSeconds <= 0) {
+    return {
+      productivePctOfDay: 0,
+      otherPctOfDay: 0,
+      untrackedPctOfDay: 0,
+      trackedPctOfDay: 0,
+      loggedPctOfDay: 0,
+    };
+  }
+  return {
+    productivePctOfDay: Math.round((productiveSeconds / dayElapsedSeconds) * 100),
+    otherPctOfDay: Math.round((otherSeconds / dayElapsedSeconds) * 100),
+    untrackedPctOfDay: Math.round((untrackedSeconds / dayElapsedSeconds) * 100),
+    trackedPctOfDay: Math.round((trackedSeconds / dayElapsedSeconds) * 100),
+    loggedPctOfDay: Math.round((loggedSeconds / dayElapsedSeconds) * 100),
+  };
+};
+
+export const buildDaySummary = (params: {
+  entries: TodayEntrySummary[];
+  now: Date;
+  dayStart: Date;
+}): { totals: DayTotals; percents: DayPercents } => {
+  const totals = computeDayAggregate(params);
+  const percents = computeDayPercents(totals);
+  return { totals, percents };
 };
 
 export const computeProductivePercentForWindow = (

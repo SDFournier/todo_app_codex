@@ -1,12 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { TodayEntrySummary } from "@/infra/header/getHeaderData";
 import { formatDurationHm } from "@/lib/time/format";
-import {
-  computeDayAggregate,
-  computeUntrackedMeta,
-  buildTimelineSegments,
-  TimelineSegment,
-} from "@/lib/analytics/dayInsights";
+import { buildDaySummary, computeUntrackedMeta, buildTimelineSegments, TimelineSegment } from "@/lib/analytics/dayInsights";
 
 type Props = {
   dayStartIso: string;
@@ -42,12 +37,15 @@ export const HeaderDayProgress: React.FC<Props> = ({ dayStartIso, nowIso, entrie
     [now, dayStart, fullDaySeconds],
   );
 
-  const aggregate = useMemo(() => computeDayAggregate({ entries, now, dayStart }), [entries, now, dayStart]);
-  const displayUntrackedSeconds = aggregate.untrackedSeconds;
-  const trackedPctOfDay = aggregate.dayElapsedSeconds > 0 ? Math.round((aggregate.trackedSeconds / aggregate.dayElapsedSeconds) * 100) : 0;
-  const productivePct = aggregate.dayElapsedSeconds > 0 ? Math.round((aggregate.productiveSeconds / aggregate.dayElapsedSeconds) * 100) : 0;
-  const otherPct = aggregate.dayElapsedSeconds > 0 ? Math.round((aggregate.otherSeconds / aggregate.dayElapsedSeconds) * 100) : 0;
-  const untrackedPct = aggregate.dayElapsedSeconds > 0 ? Math.min(100, Math.round((aggregate.untrackedSeconds / aggregate.dayElapsedSeconds) * 100)) : 0;
+  const { totals, percents } = useMemo(
+    () => buildDaySummary({ entries, now, dayStart }),
+    [entries, now, dayStart],
+  );
+  const displayUntrackedSeconds = totals.untrackedSeconds;
+  const loggedPctOfDay = percents.loggedPctOfDay;
+  const productivePct = percents.productivePctOfDay;
+  const otherPct = percents.otherPctOfDay;
+  const untrackedPct = percents.untrackedPctOfDay;
 
   const untrackedMeta = useMemo(() => computeUntrackedMeta(entries, now), [entries, now]);
   const runningUntrackedSeconds =
@@ -131,7 +129,7 @@ export const HeaderDayProgress: React.FC<Props> = ({ dayStartIso, nowIso, entrie
         </div>
         <div className="flex flex-col gap-1 text-[12px] text-[var(--color-text-muted)]">
           <span className="font-semibold text-[var(--color-text-main)]">
-            Trackeado: {formatDurationHm(aggregate.trackedSeconds)} / {formatDurationHm(aggregate.dayElapsedSeconds)} ({trackedPctOfDay}%)
+            Trackeado: {formatDurationHm(totals.loggedSeconds)} / {formatDurationHm(totals.dayElapsedSeconds)} ({loggedPctOfDay}%)
           </span>
           <div className="grid gap-1.5">
             <div className="flex items-center justify-between rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-2 py-[4px]">
@@ -139,14 +137,14 @@ export const HeaderDayProgress: React.FC<Props> = ({ dayStartIso, nowIso, entrie
                 <span className="h-2 w-2 rounded-full bg-[var(--color-success)]" />
                 <span>Productivo</span>
               </div>
-              <span className="text-[12px] font-semibold text-[var(--color-text-main)]">{formatDurationHm(aggregate.productiveSeconds)}</span>
+              <span className="text-[12px] font-semibold text-[var(--color-text-main)]">{formatDurationHm(totals.productiveSeconds)}</span>
             </div>
             <div className="flex items-center justify-between rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-2 py-[4px]">
               <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                 <span className="h-2 w-2 rounded-full bg-[var(--color-border)]" />
                 <span>Otro (trackeado no productivo)</span>
               </div>
-              <span className="text-[12px] font-semibold text-[var(--color-text-main)]">{formatDurationHm(aggregate.otherSeconds)}</span>
+              <span className="text-[12px] font-semibold text-[var(--color-text-main)]">{formatDurationHm(totals.otherSeconds)}</span>
             </div>
             <div className="flex items-center justify-between rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-2 py-[4px]">
               <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">

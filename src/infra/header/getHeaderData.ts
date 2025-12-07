@@ -1,5 +1,6 @@
 import { prisma } from '@/infra/db/prismaClient';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { ensureRunningEntry, getUntrackedDisplayTitle } from '@/infra/untracked/untrackedService';
 
 export type DayProgressSummary = {
@@ -56,7 +57,11 @@ const isEntryProductive = (params: {
 };
 
 export const getHeaderDataForUser = async (userId: string): Promise<HeaderData> => {
-  const now = new Date();
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } });
+  const timezone = user?.timezone || process.env.APP_TIMEZONE || 'UTC';
+
+  const nowUtc = new Date();
+  const now = toZonedTime(nowUtc, timezone);
 
   const ensuredRunning = await ensureRunningEntry(userId);
 
@@ -96,17 +101,18 @@ export const getHeaderDataForUser = async (userId: string): Promise<HeaderData> 
         })()
       : null;
 
-  // Today window (simplified: server timezone)
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(now);
-  endOfDay.setHours(23, 59, 59, 999);
+  // Today window in the user's timezone
+  const startOfDayZoned = startOfDay(now);
+  const endOfDayZoned = new Date(startOfDayZoned);
+  endOfDayZoned.setHours(23, 59, 59, 999);
+  const startOfDayUtc = fromZonedTime(startOfDayZoned, timezone);
+  const endOfDayUtc = fromZonedTime(endOfDayZoned, timezone);
 
   const todayEntries = await prisma.timeEntry.findMany({
     where: {
       userId,
       deletedAt: null,
-      startedAt: { gte: startOfDay, lte: endOfDay },
+      startedAt: { gte: startOfDayUtc, lte: endOfDayUtc },
     },
     include: {
       mainCategoryValue: true,
@@ -148,10 +154,10 @@ export const getHeaderDataForUser = async (userId: string): Promise<HeaderData> 
     });
   }
 
-  const dayElapsedSeconds = Math.max(0, Math.floor((now.getTime() - startOfDay.getTime()) / 1000));
+  const dayElapsedSeconds = Math.max(0, Math.floor((now.getTime() - startOfDayZoned.getTime()) / 1000));
 
   const dayProgress: DayProgressSummary = {
-    date: format(startOfDay, 'yyyy-MM-dd'),
+    date: format(startOfDayZoned, 'yyyy-MM-dd'),
     totalTrackedSeconds,
     productiveTrackedSeconds,
     otherTrackedSeconds,
@@ -164,7 +170,7 @@ export const getHeaderDataForUser = async (userId: string): Promise<HeaderData> 
     currentEntry,
     nowIso: now.toISOString(),
     dayProgress,
-    dayStartIso: startOfDay.toISOString(),
+    dayStartIso: startOfDayUtc.toISOString(),
     dayElapsedSeconds,
     todayEntries: todayEntrySummaries,
   };

@@ -13,8 +13,8 @@ const links = [
 export const TopNav = () => {
   const pathname = usePathname();
   return (
-    <nav className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-2 text-sm font-medium text-[var(--color-text-main)]">
+    <nav className="w-full border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-main)] md:gap-4 md:px-4 md:py-2 md:text-sm md:font-medium md:normal-case md:tracking-normal">
         {links.map((link) => {
           const active = pathname === link.href;
           return (

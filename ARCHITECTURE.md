@@ -10,8 +10,9 @@
 - No direct DB/Prisma calls from app/components/hooks; all mutations go through use-cases.
 - API routes must wrap handlers with `withErrorHandling` and validate with Zod.
 - Use shared validation fragments from `src/infra/http/validationSchemas.ts` where applicable.
-- Use shared mappers in `src/infra/repositories/prisma/mappers.ts` for Prisma → domain mapping (no `any`).
+- Use shared mappers in `src/infra/repositories/prisma/mappers.ts` for Prisma ↔ domain mapping (no `any`).
 - Use alias imports `@/...` (configured to `src/`); avoid brittle relative traversals.
+- Analytics/time calculations derived from API/Prisma data (totals, percentages, aggregates) must live in and be reused from `src/lib/analytics/dayInsights.ts`; extend helpers there instead of duplicating logic in components.
 
 ## Soft guidance (should)
 - Prefer small, focused helpers over inline duplication (e.g., `readJsonOrDefault` for optional bodies).

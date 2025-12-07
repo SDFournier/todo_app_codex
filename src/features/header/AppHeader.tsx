@@ -6,6 +6,7 @@ import { HeaderDayProgress } from './HeaderDayProgress';
 import type { HeaderData } from '@/infra/header/getHeaderData';
 import { formatDurationHm } from '@/lib/time/format';
 import { buildHourlyQualityBuckets, getPositiveStreaks } from '@/lib/analytics/dayInsights';
+import { TopNav } from '@/features/navigation/TopNav';
 
 type Props = {
   data: HeaderData;
@@ -25,8 +26,9 @@ export const AppHeader: React.FC<Props> = ({ data }) => {
     now,
   });
   return (
-    <header className="sticky top-0 z-20 bg-[var(--color-surface)]/90 backdrop-blur-sm shadow-[var(--shadow-soft)]">
-      <div className="mx-auto max-w-6xl px-4 py-1.5">
+    <header className="sticky top-0 z-30 bg-[var(--color-surface)]/95 backdrop-blur-sm shadow-[var(--shadow-soft)]">
+      <TopNav />
+      <div className="mx-auto max-w-6xl px-4 py-1">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
           <span>Current</span>
           <div className="flex flex-1 justify-end gap-4 md:flex-none md:gap-6">

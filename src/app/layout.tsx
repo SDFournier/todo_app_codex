@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppHeader } from "@/features/header/AppHeader";
 import { getHeaderDataForUser } from "@/infra/header/getHeaderData";
-import { TopNav } from "@/features/navigation/TopNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,7 +38,6 @@ export default async function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--color-background)]`}>
         <div className="min-h-screen">
           {header && <AppHeader data={header} />}
-          <TopNav />
           {children}
         </div>
       </body>
